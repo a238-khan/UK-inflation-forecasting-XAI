@@ -18,10 +18,17 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import xgboost as xgb
 import lightgbm as lgb
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
+
+# Optional TensorFlow imports
+try:
+    from tensorflow import keras
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+    from tensorflow.keras.callbacks import EarlyStopping
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available. LSTM model will be skipped.")
 
 
 class InflationForecaster:
@@ -94,6 +101,10 @@ class InflationForecaster:
     
     def train_lstm(self, X_train, y_train, X_val, y_val, epochs=50):
         """Train LSTM model"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Skipping LSTM - TensorFlow not available")
+            return None
+        
         print("Training LSTM...")
         
         # Reshape data for LSTM (samples, timesteps, features)
@@ -127,9 +138,15 @@ class InflationForecaster:
     
     def evaluate_model(self, model, X_test, y_test, model_name):
         """Evaluate a model and store results"""
+        if model is None:
+            print(f"Skipping evaluation for {model_name} - model not available")
+            return None
+        
         # Handle LSTM separately
         if model_name == 'lstm':
-            X_test_reshaped = X_test.values.reshape((X_test.shape[0], 1, X_test.shape[1]))
+            # Convert to numpy array if pandas DataFrame
+            X_test_array = X_test.values if hasattr(X_test, 'values') else X_test
+            X_test_reshaped = X_test_array.reshape((X_test_array.shape[0], 1, X_test_array.shape[1]))
             y_pred = model.predict(X_test_reshaped, verbose=0).flatten()
         else:
             y_pred = model.predict(X_test)
@@ -189,7 +206,11 @@ class InflationForecaster:
         self.train_random_forest(X_train, y_train)
         self.train_xgboost(X_train, y_train)
         self.train_lightgbm(X_train, y_train)
-        self.train_lstm(X_train_sub, y_train_sub, X_val, y_val)
+        lstm_result = self.train_lstm(X_train_sub, y_train_sub, X_val, y_val)
+        
+        # Only add LSTM to models if it was trained successfully
+        if lstm_result is None and 'lstm' in self.models:
+            del self.models['lstm']
         
         # Evaluate all models
         print("\n" + "="*50)

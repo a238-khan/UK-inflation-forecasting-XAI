@@ -10,12 +10,31 @@ This module implements various XAI techniques:
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import shap
-from lime import lime_tabular
 import pickle
 import os
+
+# Optional visualization and XAI imports
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    print("Warning: matplotlib/seaborn not available. Visualizations will be skipped.")
+
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
+    print("Warning: SHAP not available. SHAP explanations will be skipped.")
+
+try:
+    from lime import lime_tabular
+    LIME_AVAILABLE = True
+except ImportError:
+    LIME_AVAILABLE = False
+    print("Warning: LIME not available. LIME explanations will be skipped.")
 
 
 class ModelExplainer:
@@ -33,6 +52,10 @@ class ModelExplainer:
         """
         Analyze and visualize feature importance for tree-based models
         """
+        if not MATPLOTLIB_AVAILABLE:
+            print("Skipping feature importance plot - matplotlib not available")
+            return None
+        
         if hasattr(self.model, 'feature_importances_'):
             importances = self.model.feature_importances_
             feature_importance_df = pd.DataFrame({
@@ -62,19 +85,28 @@ class ModelExplainer:
         """
         Generate SHAP explanations
         """
+        if not SHAP_AVAILABLE or not MATPLOTLIB_AVAILABLE:
+            print(f"Skipping SHAP explanations - required libraries not available")
+            return None
+        
         print(f"Generating SHAP explanations for {model_name}...")
         
         try:
             # Sample data for faster computation
             X_sample = self.X_test.iloc[:sample_size]
             
-            # Create SHAP explainer
-            if hasattr(self.model, 'tree_'):
-                # Tree-based model
+            # Create SHAP explainer based on model type
+            model_class_name = type(self.model).__name__
+            
+            if any(name in model_class_name for name in ['RandomForest', 'XGB', 'LGBM', 'GradientBoosting']):
+                # Tree-based models
                 explainer = shap.TreeExplainer(self.model)
-            else:
-                # Linear or other models
+            elif any(name in model_class_name for name in ['Linear', 'Ridge', 'Lasso']):
+                # Linear models
                 explainer = shap.LinearExplainer(self.model, self.X_train)
+            else:
+                # Fallback to KernelExplainer (slower but works for any model)
+                explainer = shap.KernelExplainer(self.model.predict, shap.sample(self.X_train, 50))
             
             # Calculate SHAP values
             shap_values = explainer.shap_values(X_sample)
@@ -107,6 +139,10 @@ class ModelExplainer:
         """
         Generate LIME explanations for individual predictions
         """
+        if not LIME_AVAILABLE or not MATPLOTLIB_AVAILABLE:
+            print(f"Skipping LIME explanations - required libraries not available")
+            return None
+        
         print(f"Generating LIME explanations for {model_name}...")
         
         try:
