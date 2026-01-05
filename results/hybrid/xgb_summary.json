@@ -1,0 +1,13 @@
+{
+  "n_test_samples": 35,
+  "test_date_range": {
+    "start": "2022-04-01",
+    "end": "2025-02-01"
+  },
+  "horizons_trained": [
+    "cpi_t1",
+    "cpi_t3",
+    "cpi_t5"
+  ],
+  "model_type": "XGBoost (Ensemble Multi-Horizon)"
+}

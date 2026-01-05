@@ -1,0 +1,20 @@
+{
+  "features": [
+    "cpi_yoy",
+    "petrol_yoy",
+    "bank_rate",
+    "fx_usd",
+    "gva_growth",
+    "unemp_rate",
+    "cpi_yoy_l1",
+    "cpi_yoy_l3",
+    "cpi_yoy_l6",
+    "petrol_yoy_l1",
+    "fx_usd_l1",
+    "bank_rate_l1",
+    "gva_growth_l1",
+    "unemp_rate_l1",
+    "lstm_pred_t1"
+  ],
+  "n_features": 15
+}
