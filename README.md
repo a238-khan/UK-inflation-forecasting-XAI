@@ -1,23 +1,31 @@
-# UK Inflation Forecasting XAI
+# UK Inflation Forecasting — XAI
 
-This repo is organized as a simple, connected pipeline so that each stage feeds the next:
+This repository forecasts UK CPI (YoY) across multiple horizons and applies explainable AI (XAI) techniques (SHAP and LIME) for model interpretation. The workflow is notebook-driven and artifact-based for reproducibility.
 
-- Raw data (`data/raw/`) → cleaned/merged (`data/processed/`) → model-ready (`notebooks/model_ready_dataset.csv`).
-- Feature engineering and baseline modeling notebooks lead into the ensemble training (`notebooks/05_ensemble_methods.ipynb`).
-- Ensemble training saves Hybrid Model artifacts under `results/hybrid_b/` (models, feature names, stacked test features).
-- Explainability (`notebooks/06_shap_analysis.ipynb`) loads those artifacts to compute SHAP/LIME.
+## Project Structure
+- Data: `data/raw/` (source files), `data/processed/` (cleaned/merged), `notebooks/model_ready_dataset.csv` (final tabular dataset).
+- Notebooks (primary):
+	- `notebooks/01_eda_analysis.ipynb` — exploratory data analysis.
+	- `notebooks/02_feature_engineering.ipynb` — feature creation and dataset assembly.
+	- `notebooks/03_baseline_models.ipynb` — statistical baselines (e.g., ARIMA) and setup.
+	- `notebooks/04_ml_models.ipynb` — Random Forest multi-output baseline, metrics, and saved artifacts.
+	- `notebooks/06_evaluation.ipynb` — artifact-based evaluation and RF vs Hybrid comparison; plots and tables.
 
-## Run Order
-1. `notebooks/02_feature_engineering.ipynb`: produce model-ready dataset.
-2. `notebooks/05_ensemble_methods.ipynb`: run the pipeline cell to train the Hybrid Model and save artifacts.
-3. `notebooks/06_shap_analysis.ipynb`: verify artifacts (top diagnostics cell) and run SHAP/LIME.
+Older or deprecated notebooks (root-level `05_ensemble_methods.ipynb` and `06_shap_analysis.ipynb`) have been removed in favor of the curated notebooks above. XAI is handled within the evaluation flow using SHAP and LIME (see artifacts and analysis cells).
 
-## Hybrid Model Artifacts
-Saved in `results/hybrid_b/`:
-- `feature_names.json`, `stack_test_X.npy`, `lookback.json`, `test_dates.npy`
-- `xgb_t1.json`, `xgb_t3.json`, `xgb_t5.json`
+## Artifacts
+- Random Forest baseline: `artifacts/rf_baseline_metrics.csv`, plots in `artifacts/rf_baseline_plots/` and predictions in `results/baselines/rf/`.
+- Hybrid (LSTM–XGBoost): predictions per horizon in `results/hybrid/` (`xgb_cpi_t1_predictions.csv`, `xgb_cpi_t3_predictions.csv`, `xgb_cpi_t5_predictions.csv`).
 
-If any are missing, re-run the pipeline in `05_ensemble_methods.ipynb`.
+## Explainable AI (XAI)
+- SHAP and LIME analyses are integrated in the evaluation and reporting workflow to interpret feature contributions and local explanations. Generated explainability artifacts (if any) live under `artifacts/explainability/`.
 
-## Config-Driven
-Model parameters and data splits are defined in `configs/hybrid_b.yaml`. Update the config, re-run the ensemble notebook, and explainability will reflect the changes automatically.
+## Data Sources
+- Office for National Statistics (ONS): CPI and related macroeconomic indicators.
+- Bank of England (BoE): policy rate and selected macro/market series.
+
+Source files are stored in `data/raw/` (e.g., `ons_cpi.csv`, `boe_interest.csv`, `exchange_rates.csv`), then cleaned and merged into `data/processed/` before model-ready assembly.
+
+## Reproducibility Notes
+- All evaluation in `notebooks/06_evaluation.ipynb` is artifact-based — metrics and plots are computed from saved predictions to ensure consistent comparisons across models and runs.
+- Configurations (features and targets) are defined in `configs/hybrid.yaml` and are used consistently across notebooks.
